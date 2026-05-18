@@ -109,9 +109,29 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--txt
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--bdr); border-radius: 3px; }
+#pw-gate { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+#pw-box { background: var(--surf); border: 1px solid var(--bdr); border-radius: 14px; padding: 32px 28px; width: 320px; display: flex; flex-direction: column; gap: 16px; }
+#pw-box .pw-logo { font-size: 16px; font-weight: 600; text-align: center; letter-spacing: 0.5px; }
+#pw-box .pw-logo em { color: var(--acc); font-style: normal; }
+#pw-box .pw-sub { font-size: 12px; color: var(--txt3); text-align: center; }
+#pw-input { width: 100%; font-size: 13px; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--bdr); background: var(--surf2); color: var(--txt); outline: none; font-family: 'Inter', sans-serif; }
+#pw-input:focus { border-color: var(--acc); }
+#pw-btn { width: 100%; padding: 9px; border-radius: 8px; background: var(--acc); color: #fff; border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: opacity 0.15s; }
+#pw-btn:hover { opacity: 0.85; }
+#pw-err { font-size: 11px; color: var(--red); text-align: center; display: none; }
 </style>
 </head>
 <body>
+
+<div id="pw-gate">
+  <div id="pw-box">
+    <div class="pw-logo">NYS<em>AK</em> <span style="font-size:11px;color:var(--txt3);font-weight:400">staff</span></div>
+    <div class="pw-sub">Enter your password to continue</div>
+    <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkPw()">
+    <button id="pw-btn" onclick="checkPw()">Unlock</button>
+    <div id="pw-err">Incorrect password. Try again.</div>
+  </div>
+</div>
 
 <aside class="sidebar">
   <div class="logo">NYS<em>AK</em> <span>staff</span></div>
@@ -187,6 +207,22 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--txt
 </main>
 
 <script>
+function checkPw() {
+  const val = document.getElementById('pw-input').value;
+  if (val === 'Brasak123') {
+    document.getElementById('pw-gate').style.display = 'none';
+    poll();
+  } else {
+    const err = document.getElementById('pw-err');
+    err.style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('pw-input').focus();
+});
+
 let BOT_URL = 'http://193.70.34.27:20035';
 let inboxData = [];
 let currentUserId = null;
@@ -377,8 +413,7 @@ async function poll() {
   await loadBans();
 }
 
-poll();
-setInterval(poll, 15000);
+setInterval(() => { if (document.getElementById('pw-gate').style.display === 'none') poll(); }, 15000);
 </script>
 </body>
 </html>
