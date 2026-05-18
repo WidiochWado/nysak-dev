@@ -207,19 +207,76 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--txt
 </main>
 
 <script>
-function checkPw() {
+let pwAttempts = 0;
+const PW_MAX = 3;
+const PW_LOCKOUT_MS = 5 * 60 * 1000;
+
+function setLocked(until) { sessionStorage.setItem('pw_locked_until', until); }
+function getLocked() { const v = sessionStorage.getItem('pw_locked_until'); return v ? parseInt(v) : 0; }
+
+function checkLockout() {
+  const until = getLocked();
+  if (!until) return false;
+  const remaining = until - Date.now();
+  if (remaining <= 0) { sessionStorage.removeItem('pw_locked_until'); pwAttempts = 0; return false; }
+  showLockoutMsg(remaining);
+  return true;
+}
+
+function showLockoutMsg(remaining) {
+  const mins = Math.ceil(remaining / 60000);
+  const err = document.getElementById('pw-err');
+  err.textContent = 'Too many attempts. Locked out for ' + mins + ' minute' + (mins !== 1 ? 's' : '') + '.';
+  err.style.display = 'block';
+  document.getElementById('pw-input').disabled = true;
+  document.getElementById('pw-btn').disabled = true;
+  document.getElementById('pw-btn').style.opacity = '0.4';
+  if (window._lockTimer) clearInterval(window._lockTimer);
+  window._lockTimer = setInterval(() => {
+    const left = getLocked() - Date.now();
+    if (left <= 0) {
+      clearInterval(window._lockTimer);
+      const err2 = document.getElementById('pw-err');
+      err2.style.display = 'none';
+      document.getElementById('pw-input').disabled = false;
+      document.getElementById('pw-btn').disabled = false;
+      document.getElementById('pw-btn').style.opacity = '';
+      document.getElementById('pw-input').focus();
+      pwAttempts = 0;
+    } else {
+      const m = Math.ceil(left / 60000);
+      err.textContent = 'Too many attempts. Locked out for ' + m + ' minute' + (m !== 1 ? 's' : '') + '.';
+    }
+  }, 1000);
+}
+
+async function checkPw() {
+  if (checkLockout()) return;
   const val = document.getElementById('pw-input').value;
-  if (val === 'Brasak123') {
+  const enc = new TextEncoder().encode(val);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  if (hash === '8f8895c1c80a50766149d37e785737ce398ae07bfd7c0b98ebbf1f0dac842eb0') {
     document.getElementById('pw-gate').style.display = 'none';
+    pwAttempts = 0;
     poll();
   } else {
+    pwAttempts++;
+    const remaining = PW_MAX - pwAttempts;
     const err = document.getElementById('pw-err');
-    err.style.display = 'block';
+    if (pwAttempts >= PW_MAX) {
+      setLocked(Date.now() + PW_LOCKOUT_MS);
+      showLockoutMsg(PW_LOCKOUT_MS);
+    } else {
+      err.textContent = 'Incorrect password. ' + remaining + ' attempt' + (remaining !== 1 ? 's' : '') + ' remaining.';
+      err.style.display = 'block';
+    }
     document.getElementById('pw-input').value = '';
     document.getElementById('pw-input').focus();
   }
 }
 document.addEventListener('DOMContentLoaded', () => {
+  if (checkLockout()) return;
   document.getElementById('pw-input').focus();
 });
 
