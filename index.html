@@ -278,9 +278,15 @@ async function checkPw() {
 document.addEventListener('DOMContentLoaded', () => {
   if (checkLockout()) return;
   document.getElementById('pw-input').focus();
+  // Update the URL input to show the detected BOT_URL
+  const urlInput = document.getElementById('bot-url');
+  if (urlInput) urlInput.value = BOT_URL;
 });
 
-let BOT_URL = 'http://193.70.34.27:20035';
+// If served directly from the bot's HTTP server, use the same origin automatically
+let BOT_URL = (window.location.protocol === 'file:' || window.location.hostname === '')
+  ? 'http://193.70.34.27:20035'
+  : window.location.origin;
 let inboxData = [];
 let currentUserId = null;
 
